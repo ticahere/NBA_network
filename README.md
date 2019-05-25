@@ -1,5 +1,5 @@
 # NBA_network
-Create network chart of NBA players
+Create network chart of NBA players with React + D3 v4
 
 
 # Installing
