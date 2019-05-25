@@ -1,3 +1,7 @@
 .nodes {
-  pointer-events: none;
+  /* pointer-events: none; */
+}
+
+.tooltip {
+  width: auto;
 }
