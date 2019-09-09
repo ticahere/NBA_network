@@ -1,4 +1,8 @@
 import React from 'react';
+import Button from '@material-ui/core/Button';
+import Grid from '@material-ui/core/Grid';
+import ButtonGroup from '@material-ui/core/ButtonGroup';
+
 import * as d3 from 'd3'
 import * as d3_force from 'd3-force'
 import d3_tip from 'd3-tip'
@@ -11,11 +15,17 @@ class Network extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
+      playerNum: 50
      };
+    // this.onButtonClick = this.onButtonClick.bind(this)
   }
+  
   componentWillMount(){
   }
   componentDidMount() {
+    this.drawChart()
+  }
+  componentWillUpdate(){
     this.drawChart()
   }
 
@@ -32,6 +42,7 @@ class Network extends React.Component {
     var width = 1080 - margin.left - margin.right;
     var height = 850 - margin.top - margin.bottom;
     var targetID = null;
+    var hoverID = null;
     var tooltip = d3_tip()
       .attr('class', 'tooltip')
       .offset([-5, 40])
@@ -42,17 +53,21 @@ class Network extends React.Component {
     var circleRadius = 50;
 
     //Create an SVG element and append it to the DOM
+    if (d3.select(".network-chart").select('svg')){
+      d3.select(".network-chart").select('svg').remove()
+    } 
     var nodeElement = d3.select(".network-chart")
-              .append('svg')
-              .attr("width",width)
-              .attr("height",height)
-    					.append("g")
-              .attr('class', 'nodes-wrapper')
-    					.attr("transform","translate("+margin.left+","+margin.top+")")
-              .call(tooltip);
+      .append('svg')
+      .attr("width",width)
+      .attr("height",height)
+      .append("g")
+      .attr('class', 'nodes-wrapper')
+      .attr("transform","translate("+margin.left+","+margin.top+")")
+      .call(tooltip);
 
 
     var nodes = dataset.nodes;
+    
     var playerData = playerid.data
     var links = []
     nodes.map((r, i) => {
@@ -112,21 +127,27 @@ class Network extends React.Component {
           .force("link")
           .links(links)
 
-
+        
+          d3.selection.prototype.moveToFront = function() {
+            console.log('move', this)
+          return this.each(function(){
+            this.parentNode.appendChild(this);
+          });
+        };
 
         function ticked() {
 
           // set position of link path
-          var link = nodeElement.selectAll(".link")
+          var link = nodeElement.selectAll("path")
             .data(links)
 
           link
             .enter()
             .append("svg:path")
             .merge(link)
-            .attr("stroke-width", function(d){ return d.weight; })
+            .attr("stroke-width", function(d){ return d.weight * 2; })
             .attr("class","link")
-            .classed("link-highlight", d=> targetID === d.source.id || targetID === d.target.id? true : false)
+            .classed("link-highlight", d=> targetID === d.source.id || targetID === d.target.id)
             .attr("d", function(d) {
               var dx = d.target.x - d.source.x,
                   dy = d.target.y - d.source.y,
@@ -138,16 +159,30 @@ class Network extends React.Component {
                   d.target.x + "," +
                   d.target.y;
             })
+            .attr('opacity', d => targetID === d.source.id || targetID === d.target.id ? 1 : 0.4)
             .on('mouseover', function (d) {
-              d3.select(this)
-                .attr("class", function (l) {
-                  if (l.target.id == d.target.id && l.source.id == d.source.id) return 'link-highlight'
-                  else return 'link'
-                });
-              tooltip.html(getLinkContent(d)).show(d, this)
+              if (!targetID || (targetID === d.source.id || targetID === d.target.id)) {
+                  d3.select(this)
+                  .attr("class", function (l) {
+                    if (l.target.id == d.target.id && l.source.id == d.source.id) {
+                      return 'link-highlight'
+                    }
+                    else return 'link'
+                  });
+                tooltip.html(getLinkContent(d)).show(d, this)
+              }
             })
             .on('mouseout', function (d)  {
-              d3.select(this).attr("class", "link")
+              if (targetID === d.source.id || targetID === d.target.id) {
+                d3.select(this)
+                .attr("class", function (l) {
+                  if (l.target.id == d.target.id && l.source.id == d.source.id) {
+                    return 'link-highlight'
+                  }
+                  else return 'link'
+                });
+              }
+              // d3.select(this).attr("class", targetID && (targetID === d.source.id || targetID === d.target.id) ? "link-highlight" : "link")
               tooltip.hide(this)
             })
 
@@ -160,6 +195,7 @@ class Network extends React.Component {
           .append('g')
           .merge(u)
           .attr('transform',d => "translate(" + d.x + "," + d.y +")")
+          .attr('opacity', d => targetID ? d.id === targetID ? 1 : 0.4 : 1)
           .attr('class', "nodes")
           .each((d, i, n) => {
             const playerImg = d3.select(n[i]).selectAll('image').data([d])
@@ -176,10 +212,21 @@ class Network extends React.Component {
               .attr("y", - 45)
               .attr("height", 70)
               .attr("width", 70)
-              .on("mouseover", function (d) { targetID= d.id})
-              .on("mouseout", function (d) { targetID= null; tooltip.hide(this)})
+              .on("mouseover", function (d) { 
+                hoverID = d.id
+                if (!targetID || targetID === d.id) {
+                  tooltip.html(getNodeContent(d)).show(d, this)
+                } 
+              })
+              .on("mouseout", function (d) { hoverID = null; tooltip.hide(this)})
               .on("click", function(d) {
-                tooltip.html(getNodeContent(d)).show(d, this)
+                if (!targetID || targetID !==d.id) {
+                  targetID = d.id
+                  tooltip.html(getNodeContent(d)).show(d, this)
+                } else {
+                  targetID = null
+                }
+                
               })
 
             playerName
@@ -190,13 +237,13 @@ class Network extends React.Component {
               .attr("dy", "2.3em")
               .attr("font-size", '12px')
               .attr('text-anchor', 'middle')
-              .attr('font-weight', d=> d.id === targetID ? 600 : 500)
+              .attr('font-weight', d=> d.id === targetID || d.id === hoverID? 600 : 500)
               .text(function(d){ return d.player; });
 
             playerBar
               .enter()
               .append("rect")
-              .attr('class', '.bar')
+              .attr('class', 'bar')
               .merge(playerBar)
               .attr("x", -45)
               .attr("y", 32)
@@ -207,7 +254,7 @@ class Network extends React.Component {
             playerBarLength
               .enter()
               .append("rect")
-              .attr('class', '.barLength')
+              .attr('class', 'barLength')
               .merge(playerBarLength)
               .attr("x", -45)
               .attr("y", 32)
@@ -243,7 +290,7 @@ class Network extends React.Component {
         }
 
         function getNodeContent(d) {
-          var content = '<p class="main title">' + d.player + '<p class="note">' + Object.keys(d).length + ' Seasons</p></p>'
+          var content = '<p class="main title">' + d.player + '<p class="note">' + d.yos + ' Seasons</p></p>'
             content += '<div class="flexbox_row">' + seasonKey.map((r, i) => {
               if (d[r]!=="NP"){
                 return '<div class="flexbox_column"><div class="year">'
@@ -271,16 +318,33 @@ class Network extends React.Component {
         d.fx = null;
         d.fy = null;
     }
+    
   }
+  // onButtonClick(val) {
+  //   this.setState({
+  //     playerNum: val
+  //   })
+  // }
+  // getFilter() {
+  //   return <div className='filter'>
+  //       <Grid item>
+  //           <ButtonGroup size="small" aria-label="small outlined button group">
+  //             <Button onClick={() => this.onButtonClick(10)}>Top 10</Button>
+  //             <Button onClick={() => this.onButtonClick(30)}>Top 30</Button>
+  //             <Button onClick={() => this.onButtonClick(50)}>Top 50</Button>
+  //           </ButtonGroup>
+  //         </Grid>
+  //   </div>
+  // }
 
 
   render() {
 
     return (
       <div className="network-chart-wrapper">
-        <h2>NBA Top Players Network</h2>
+        <h2>NBA Top 50 Players Network</h2>
         <div className="subtitle">Explore who play with whom, how long they have played, and which team they played for.</div>
-
+        {/* {this.getFilter()} */}
         <div className="network-chart"></div>
         <div className="tooltip-chart"></div>
       </div>

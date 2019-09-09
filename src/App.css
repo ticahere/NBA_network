@@ -1,6 +1,7 @@
 body {
   font-family: Monospace, sans-serif;
   text-align: center;
+  cursor: default;
 }
 h2 {
   margin: 10px;
@@ -37,7 +38,10 @@ h2 {
   stroke: black;
   fill: none;
 }
-.node text {
+.nodes {
+  cursor: pointer;
+}
+.nodes text {
   pointer-events: none;
   font: sans-serif;
   fill: #4a4a4a;
@@ -102,4 +106,8 @@ hr.tooltip-hr {
   width: 25px;
   height: 25px;
   margin: 3px 5px;
+}
+
+.filter {
+  margin-top: 30px;
 }
