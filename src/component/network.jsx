@@ -40,7 +40,7 @@ class Network extends React.Component {
     		left: 50
     	};
     var width = 1080 - margin.left - margin.right;
-    var height = 850 - margin.top - margin.bottom;
+    var height = 800 - margin.top - margin.bottom;
     var targetID = null;
     var hoverID = null;
     var tooltip = d3_tip()
@@ -78,6 +78,8 @@ class Network extends React.Component {
           yos ++
         }
       })
+      r["yos"] = yos
+      r['teammate'] = []
       // find player id
       playerData.map((player) => {
         var name = player['firstName'] + ' ' + player['lastName']
@@ -86,26 +88,30 @@ class Network extends React.Component {
         }
       })
 
-      r["yos"] = yos
-      for (var j = i + 1; j < nodes.length; j++) {
-        var sameTeamYear = 0
-        var team = ''
-        var lastYear = ''
+      for (var j = 0; j < nodes.length; j++) {
+        if (j !== i) {
+          var sameTeamYear = 0
+          var team = ''
+          var lastYear = ''
           seasonKey.map((key, ind) => {
-            if (r[key] === nodes[j][key] && r[key]!== "NP"){
-              sameTeamYear ++;
-              team = r[key]
-              lastYear = key
-            } else if (team !== '') {
-              links.push({'source': r.id, 'target': nodes[j].id, 'weight': sameTeamYear, 'team': team, 'year': lastYear})
-              team = ''
-              sameTeamYear = 0
-            }
-        })
-        if (sameTeamYear > 0) links.push({'source': r.id, 'target': nodes[j].id, 'weight': sameTeamYear, 'team': team, 'year': lastYear})
+              if (r[key] === nodes[j][key] && r[key]!== "NP"){
+                sameTeamYear ++;
+                team = r[key]
+                lastYear = key
+              } else if (team !== '') {
+                r['teammate'].push(nodes[j].id)
+                if (j> i) links.push({'source': r.id, 'target': nodes[j].id, 'weight': sameTeamYear, 'team': team, 'year': lastYear})
+                team = ''
+                sameTeamYear = 0
+              }
+          })
+          if (sameTeamYear > 0) {
+            r['teammate'].push(nodes[j].id)
+            if (j> i) links.push({'source': r.id, 'target': nodes[j].id, 'weight': sameTeamYear, 'team': team, 'year': lastYear})
+          }
+        }
       }
     })
-
     //Create Force Layout
     var simulation = d3_force.forceSimulation()
          .force("link", d3.forceLink().id(function(d,i) {
@@ -127,13 +133,18 @@ class Network extends React.Component {
           .force("link")
           .links(links)
 
-        
-          d3.selection.prototype.moveToFront = function() {
-            console.log('move', this)
-          return this.each(function(){
-            this.parentNode.appendChild(this);
-          });
-        };
+      // move to front & back function
+      d3.selection.prototype.moveToFront = function() {
+        return this.each(function(){
+          this.parentNode.appendChild(this);
+        });
+      };
+      d3.selection.prototype.moveToBack = function() { 
+        this.each(function(){ 
+          var firstChild = this.parentNode.firstChild; 
+          if (firstChild) { this.parentNode.insertBefore(this, firstChild); }
+        }); 
+      };
 
         function ticked() {
 
@@ -159,30 +170,15 @@ class Network extends React.Component {
                   d.target.x + "," +
                   d.target.y;
             })
-            .attr('opacity', d => targetID === d.source.id || targetID === d.target.id ? 1 : 0.4)
+            .attr('opacity', d => targetID ? targetID === d.source.id || targetID === d.target.id ? 1 : 0.4 : 1)
             .on('mouseover', function (d) {
+              d3.select(this).classed("link-highlight", true)
               if (!targetID || (targetID === d.source.id || targetID === d.target.id)) {
-                  d3.select(this)
-                  .attr("class", function (l) {
-                    if (l.target.id == d.target.id && l.source.id == d.source.id) {
-                      return 'link-highlight'
-                    }
-                    else return 'link'
-                  });
                 tooltip.html(getLinkContent(d)).show(d, this)
               }
             })
             .on('mouseout', function (d)  {
-              if (targetID === d.source.id || targetID === d.target.id) {
-                d3.select(this)
-                .attr("class", function (l) {
-                  if (l.target.id == d.target.id && l.source.id == d.source.id) {
-                    return 'link-highlight'
-                  }
-                  else return 'link'
-                });
-              }
-              // d3.select(this).attr("class", targetID && (targetID === d.source.id || targetID === d.target.id) ? "link-highlight" : "link")
+              d3.select(this).classed("link-highlight",  d=> targetID === d.source.id || targetID === d.target.id)
               tooltip.hide(this)
             })
 
@@ -195,7 +191,8 @@ class Network extends React.Component {
           .append('g')
           .merge(u)
           .attr('transform',d => "translate(" + d.x + "," + d.y +")")
-          .attr('opacity', d => targetID ? d.id === targetID ? 1 : 0.4 : 1)
+          .attr('opacity', d => {
+            return targetID ? d.id === targetID || d.teammate.includes(targetID) ? 1 : 0.4 : 1})
           .attr('class', "nodes")
           .each((d, i, n) => {
             const playerImg = d3.select(n[i]).selectAll('image').data([d])
@@ -214,11 +211,14 @@ class Network extends React.Component {
               .attr("width", 70)
               .on("mouseover", function (d) { 
                 hoverID = d.id
+                if (targetID === d.id) {
+                  d3.select(this).moveToFront()
+                } 
                 if (!targetID || targetID === d.id) {
                   tooltip.html(getNodeContent(d)).show(d, this)
                 } 
               })
-              .on("mouseout", function (d) { hoverID = null; tooltip.hide(this)})
+              .on("mouseout", function (d) { hoverID = null; if (targetID !== d.id) tooltip.hide(this)})
               .on("click", function(d) {
                 if (!targetID || targetID !==d.id) {
                   targetID = d.id
@@ -226,7 +226,6 @@ class Network extends React.Component {
                 } else {
                   targetID = null
                 }
-                
               })
 
             playerName
@@ -276,6 +275,7 @@ class Network extends React.Component {
           u.exit().remove()
 
         }
+
         function getLinkContent(d) {
           var weightYear = Array.apply(null, {length: d.weight}).map(Number.call, Number)
           var content = '<p class="main title">' + d.weight + (d.weight > 1 ? ' Seasons ' : ' Season ') + '</p>'
