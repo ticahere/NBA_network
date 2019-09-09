@@ -119,7 +119,7 @@ class Network extends React.Component {
          }).distance(function(link) {
                return  200 - link.weight * 8;
         }))
-       .force("charge", d3.forceManyBody().strength(-100))
+       .force("charge", d3.forceManyBody().strength(-70))
        .force("center", d3.forceCenter(width / 2,height / 2))
        .force('collision', d3.forceCollide().radius(circleRadius))
        .force("y", d3.forceY(height/2).strength(0.05))
@@ -205,10 +205,10 @@ class Network extends React.Component {
               .append("svg:image")
               .merge(playerImg)
               .attr("xlink:href",  function(d){ return imageURL + d.pid + '.png' })
-              .attr("x", - 35)
-              .attr("y", - 45)
-              .attr("height", 70)
-              .attr("width", 70)
+              .attr("x", - 30)
+              .attr("y", - 40)
+              .attr("height", 60)
+              .attr("width", 60)
               .on("mouseover", function (d) { 
                 hoverID = d.id
                 if (targetID === d.id) {
@@ -342,7 +342,7 @@ class Network extends React.Component {
 
     return (
       <div className="network-chart-wrapper">
-        <h2>NBA Top 50 Players Network</h2>
+        <h2>NBA Top Players Network</h2>
         <div className="subtitle">Explore who play with whom, how long they have played, and which team they played for.</div>
         {/* {this.getFilter()} */}
         <div className="network-chart"></div>
