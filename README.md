@@ -3,6 +3,7 @@
 Network chart of NBA players with React + D3 v4
 
 Basketball is all about team. We love top NBA players because they play hard to fight for their team's win. However, we don't yet have an easy way to explore how they are connected to each other, especially for those top players it's very interesting to see when and where they play together.
+
 ![NBA Network](./src/image/1_overview.png "NBA Network")
 
 NBA Network for top NBA players provides an easy view for fans to explore who play with whom, how long they have played, and which team they played for.
