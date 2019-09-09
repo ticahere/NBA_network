@@ -12,6 +12,12 @@ h2 {
   font-size: 14px;
   color: #8c8d8e;
 }
+.footnote {
+  font-size:12px;
+  width: 600px;
+  position: fixed;
+  right: 40px;
+}
 .flexbox_row {
   display: flex;
   flex-direction: row;

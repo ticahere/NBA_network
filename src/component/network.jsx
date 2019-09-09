@@ -40,7 +40,7 @@ class Network extends React.Component {
     		left: 50
     	};
     var width = 1080 - margin.left - margin.right;
-    var height = 800 - margin.top - margin.bottom;
+    var height = 850 - margin.top - margin.bottom;
     var targetID = null;
     var hoverID = null;
     var tooltip = d3_tip()
@@ -342,11 +342,12 @@ class Network extends React.Component {
 
     return (
       <div className="network-chart-wrapper">
-        <h2>NBA Top Players Network</h2>
+        <h2>NBA Top 50 Players Network</h2>
         <div className="subtitle">Explore who play with whom, how long they have played, and which team they played for.</div>
         {/* {this.getFilter()} */}
         <div className="network-chart"></div>
         <div className="tooltip-chart"></div>
+        <div className="footnote">*Data are collected from Basketball-Reference in 2018-19 NBA Season sorted by points per game https://www.basketball-reference.com/leagues/NBA_2019_per_game.html</div>
       </div>
     );
   }
