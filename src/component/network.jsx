@@ -5,6 +5,7 @@ import d3_tip from 'd3-tip'
 import '../data/player.js'
 import teamColor from '../util/color.js'
 import dataset from '../data/player.js'
+import playerid from '../data/playerid.js'
 
 class Network extends React.Component {
   constructor(props) {
@@ -37,7 +38,7 @@ class Network extends React.Component {
 
     var imageURL= 'https://ak-static.cms.nba.com/wp-content/uploads/headshots/nba/latest/260x190/'
     var seasonKey=['2003-04', '2004-05', '2005-06', '2006-07', '2007-08', '2008-09', '2009-10', '2010-11',
-    '2011-12', '2012-13', '2013-14', '2014-15','2015-16','2016-17','2017-18']
+    '2011-12', '2012-13', '2013-14', '2014-15','2015-16','2016-17','2017-18','2018-19']
     var circleRadius = 50;
 
     //Create an SVG element and append it to the DOM
@@ -52,16 +53,33 @@ class Network extends React.Component {
 
 
     var nodes = dataset.nodes;
+    var playerData = playerid.data
     var links = []
     nodes.map((r, i) => {
+      var yos = 0
+      // calculate yos
+      seasonKey.map((yr) => {
+        if (r[yr] !=="NP") {
+          yos ++
+        }
+      })
+      // find player id
+      playerData.map((player) => {
+        var name = player['firstName'] + ' ' + player['lastName']
+        if (name == r['player']){
+          r["pid"] = player['playerId']
+        }
+      })
+
+      r["yos"] = yos
       for (var j = i + 1; j < nodes.length; j++) {
         var sameTeamYear = 0
         var team = ''
         var lastYear = ''
           seasonKey.map((key, ind) => {
-            if (r.history[key] && r.history[key] === nodes[j].history[key]){
+            if (r[key] === nodes[j][key] && r[key]!== "NP"){
               sameTeamYear ++;
-              team = r.history[key]
+              team = r[key]
               lastYear = key
             } else if (team !== '') {
               links.push({'source': r.id, 'target': nodes[j].id, 'weight': sameTeamYear, 'team': team, 'year': lastYear})
@@ -194,7 +212,7 @@ class Network extends React.Component {
               .attr("x", -45)
               .attr("y", 32)
               .attr("height", 3)
-              .attr("fill", teamColor[d.history['2017-18']])
+              .attr("fill", teamColor[d['2017-18']])
               .attr('width', function (d) {return 90 * d.yos / 15})
 
             playerImg.exit().remove()
@@ -225,12 +243,14 @@ class Network extends React.Component {
         }
 
         function getNodeContent(d) {
-          var content = '<p class="main title">' + d.player + '<p class="note">' + Object.keys(d.history).length + ' Seasons</p></p>'
-            content += '<div class="flexbox_row">' + Object.keys(d.history).map((r, i) => {
-              return '<div class="flexbox_column"><div class="year">'
-              + r.substr(5, 7).replace('-', '') + '</div><div class="dot"></div><div>'
-              + '<img class="team-icon" src="https://d2p3bygnnzw9w3.cloudfront.net/req/201807061/tlogo/bbr/' + d.history[r] + '-' + r.substr(0,2) + r.substr(5, 7) + '.png"/>' + '</div><div>'
-              + d.history[r] + '</div></div>'
+          var content = '<p class="main title">' + d.player + '<p class="note">' + Object.keys(d).length + ' Seasons</p></p>'
+            content += '<div class="flexbox_row">' + seasonKey.map((r, i) => {
+              if (d[r]!=="NP"){
+                return '<div class="flexbox_column"><div class="year">'
+                + r.substr(5, 7).replace('-', '') + '</div><div class="dot"></div><div>'
+                + '<img class="team-icon" src="https://d2p3bygnnzw9w3.cloudfront.net/req/201807061/tlogo/bbr/' + d[r] + '-' + r.substr(0,2) + r.substr(5, 7) + '.png"/>' + '</div><div>'
+                + d[r] + '</div></div>'
+              }
             }).join('') + '</div>'
             return content
         }
