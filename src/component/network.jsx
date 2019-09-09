@@ -258,7 +258,7 @@ class Network extends React.Component {
               .attr("x", -45)
               .attr("y", 32)
               .attr("height", 3)
-              .attr("fill", teamColor[d['2017-18']])
+              .attr("fill", teamColor[d['2018-19']])
               .attr('width', function (d) {return 90 * d.yos / 15})
 
             playerImg.exit().remove()
